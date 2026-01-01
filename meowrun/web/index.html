@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#ffd6e7" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./app.css" />
+  <title>MeowRun</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <div class="title">MeowRun</div>
+        <div class="sub">Tap • Gems • KittyBank • Invite • RM</div>
+      </div>
+    </div>
+    <button id="btnInstall" class="pill ghost" hidden>Install</button>
+  </header>
+
+  <main class="shell">
+    <section id="auth" class="card">
+      <h2>Masuk</h2>
+      <div class="grid2">
+        <input id="email" class="input" placeholder="Email" autocomplete="email" />
+        <div class="passWrap">
+          <input id="pass" class="input" placeholder="Password" type="password" autocomplete="current-password" />
+          <button id="btnPw" class="iconBtn" type="button" aria-label="Show/hide password" title="Show/hide password">👁️</button>
+        </div>
+      </div>
+      <div class="row">
+        <button id="btnLogin" class="pill primary">Login</button>
+        <button id="btnReg" class="pill">Register</button>
+      </div>
+      <div class="muted small">PWA versi original (bukan copy Speed Man).</div>
+    </section>
+
+    <section id="app" hidden>
+      <div class="card gradient">
+        <div class="row space">
+          <div>
+            <div class="muted small">Hi,</div>
+            <div id="name" class="big">Player</div>
+            <div class="muted small">Level <span id="lvl">1</span> • Activity <span id="act">0</span></div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="k">Coin</div>
+              <div class="v" id="coins">0</div>
+            </div>
+            <div class="stat">
+              <div class="k">RM</div>
+              <div class="v">RM<span id="rm">0.00</span></div>
+            </div>
+            <div class="stat">
+              <div class="k">Gems</div>
+              <div class="v" id="gems">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div class="col">
+          <section id="screenProfile" class="card">
+            <div class="row space">
+              <h2>Profile</h2>
+              <button id="btnSaveName" class="pill primary">Save</button>
+            </div>
+            <div class="row">
+              <input id="displayName" class="input" placeholder="Nama display (max 24)" maxlength="24" />
+              <button id="btnRandomName" class="pill">Random</button>
+            </div>
+            <div class="muted small">Nama display ni untuk vibe & ranking (akan datang).</div>
+          </section>
+
+          <section id="screenSettings" class="card">
+            <div class="row space">
+              <h2>Settings</h2>
+              <button id="btnResetUi" class="pill ghost">Reset</button>
+            </div>
+            <div class="settingsGrid">
+              <label class="toggle">
+                <input type="checkbox" id="setSound" />
+                <span>Sound</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="setHaptic" />
+                <span>Haptic</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" id="setDark" />
+                <span>Dark Mode</span>
+              </label>
+            </div>
+            <div style="margin-top:14px">
+              <div class="row space" style="margin-top:0">
+                <div>
+                  <div style="font-weight:950">Style Pack</div>
+                  <div class="muted small">Soft = comfy. Minimal = clean. Neon = arcade (auto dark).</div>
+                </div>
+              </div>
+              <div id="styleSeg" class="segmented" role="tablist" aria-label="Style Pack">
+                <button class="segBtn" type="button" data-style="pastel">Soft</button>
+                <button class="segBtn" type="button" data-style="minimal">Minimal</button>
+                <button class="segBtn" type="button" data-style="arcade">Neon</button>
+              </div>
+            </div>
+            <div class="muted small">Tip: tap pada track pun dikira.</div>
+          </section>
+
+          <section id="screenGame" class="card">
+            <div class="row space">
+              <h2>Meow Sprint</h2>
+              <div class="row" style="margin-top:0">
+                <span class="badge" id="cfgBadge"></span>
+                <span class="badge">Best: <span id="bestGrade">-</span></span>
+              </div>
+            </div>
+
+            <div class="hud">
+              <div class="hudLeft">
+                <div class="meter"><div id="timeFill" class="fill"></div></div>
+                <div class="muted small"><span id="timeLeft">10.0</span>s • Combo x<span id="combo">1</span> • Hit <span id="hits">0</span></div>
+              </div>
+              <div class="hudRight">
+                <div class="badge">Distance <span id="dist">0</span>m</div>
+                <div class="badge">Perfect <span id="perfect">0</span></div>
+              </div>
+            </div>
+
+            <div id="track" class="track tappable" role="button" aria-label="Tap track untuk berlari">
+              <div class="trackBg"></div>
+              <div id="runner" class="runner skin-1" aria-hidden="true"></div>
+              <div id="obsLayer" class="obsLayer" aria-hidden="true"></div>
+              <div id="tapBurst" class="tapBurst" aria-hidden="true"></div>
+            </div>
+
+            <div class="row space">
+              <button id="btnStartRun" class="pill primary">Start Run</button>
+              <button id="btnTap" class="pill primary" disabled>TAP</button>
+              <button id="btnFinishRun" class="pill" disabled>Finish</button>
+            </div>
+
+            <div class="row">
+              <button id="btnUpgrade" class="pill ghost">Upgrade Level (guna Gems)</button>
+              <button id="btnSkin" class="pill">Skin</button>
+            </div>
+
+            <div id="runResult" class="result" hidden></div>
+          </section>
+        </div>
+
+        <div class="col">
+          <section id="screenTasks" class="card">
+            <div class="row space">
+              <h2>Tasks</h2>
+              <button id="btnAd" class="pill primary">Tonton Iklan (+coin)</button>
+            </div>
+            <div class="muted small">Had harian & cooldown ikut server.</div>
+            <div class="row">
+              <button id="btnDaily" class="pill">Daily Treat (+gems+activity)</button>
+              <button id="btnLedger" class="pill ghost">History</button>
+            </div>
+            <div id="cool" class="muted small"></div>
+          </section>
+
+          <section id="screenActivity" class="card">
+            <div class="row space">
+              <h2>Cumulative Activity</h2>
+              <button id="btnRefreshAct" class="pill ghost">Refresh</button>
+            </div>
+            <div id="actList" class="list"></div>
+          </section>
+
+          <section id="screenInvite" class="card">
+            <div class="row space">
+              <h2>Invite</h2>
+              <button id="btnRefreshInvite" class="pill ghost">Refresh</button>
+            </div>
+
+            <div class="muted small">Invitation ID kau:</div>
+            <div class="row">
+              <div class="badge">ID: <span id="myCode">-</span></div>
+              <button id="btnCopyCode" class="pill">Copy</button>
+              <button id="btnShareLink" class="pill primary">Share Link</button>
+            </div>
+
+            <div class="muted small" style="margin-top:8px">Isi code inviter (sekali sahaja):</div>
+            <div class="row">
+              <input id="bindCode" class="input" placeholder="Masukkan ID (contoh: 78725268)" />
+              <button id="btnBind" class="pill primary">Filled in</button>
+            </div>
+
+            <div class="muted small" style="margin-top:8px">Friends invited:</div>
+            <div id="inviteList" class="list"></div>
+          </section>
+
+          <section id="screenBank" class="card">
+            <div class="row space">
+              <h2>KittyBank (Gems → Coin)</h2>
+              <span class="badge">Unlock level <span id="minLvl">10</span></span>
+            </div>
+            <div class="muted small">
+              Bila level cukup, kau boleh tukar gems jadi coin (withdrawable).
+            </div>
+
+            <div class="row">
+              <input id="convertGems" class="input" type="number" min="0" placeholder="Masukkan jumlah gems" />
+              <button id="btnConvert" class="pill primary">Convert</button>
+            </div>
+            <div class="muted small" id="convertHint"></div>
+          </section>
+
+          <section id="screenWallet" class="card">
+            <div class="row space">
+              <h2>Withdraw (RM)</h2>
+              <button id="btnLogout" class="pill ghost">Logout</button>
+            </div>
+            <div class="muted small">Min withdraw RM10 = 10,000 coin</div>
+
+            <div class="grid2">
+              <input id="wdAmount" class="input" type="number" min="10" step="0.1" placeholder="10.00" />
+              <select id="wdMethod" class="input">
+                <option value="paypal">PayPal</option>
+                <option value="tng">TNG eWallet</option>
+              </select>
+            </div>
+            <input id="wdDest" class="input" placeholder="PayPal email / TNG phone" />
+            <div class="row">
+              <button id="btnWithdraw" class="pill primary">Submit</button>
+              <button id="btnRefreshWD" class="pill">Refresh</button>
+            </div>
+
+            <div id="wdList" class="list"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom navigation (premium feel) -->
+  <nav id="bottomNav" class="bottomNav" hidden aria-label="Navigasi">
+    <button class="navBtn active" data-target="screenGame" aria-label="Game">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 5v14l11-7z" fill="currentColor"></path>
+      </svg>
+      <span>Game</span>
+    </button>
+    <button class="navBtn" data-target="screenTasks" aria-label="Tasks">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 11l2 2 4-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M4 6h4M4 12h4M4 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M14 6h6M14 12h6M14 18h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+      <span>Tasks</span>
+    </button>
+    <button class="navBtn" data-target="screenInvite" aria-label="Invite">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z" fill="none" stroke="currentColor" stroke-width="2"></path>
+        <path d="M8 12c1.66 0 3-1.34 3-3S9.66 6 8 6 5 7.34 5 9s1.34 3 3 3z" fill="none" stroke="currentColor" stroke-width="2"></path>
+        <path d="M8 14c-2.76 0-5 1.34-5 3v2h10v-2c0-1.66-2.24-3-5-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+        <path d="M16 13c-1.1 0-2.12.22-3 .6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M19 14v4M17 16h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+      <span>Invite</span>
+    </button>
+    <button class="navBtn" data-target="screenBank" aria-label="KittyBank">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+      </svg>
+      <span>Bank</span>
+    </button>
+    <button class="navBtn" data-target="screenWallet" aria-label="Wallet">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" fill="none" stroke="currentColor" stroke-width="2"></path>
+        <path d="M21 10H16a2 2 0 0 0 0 4h5" fill="none" stroke="currentColor" stroke-width="2"></path>
+        <circle cx="16" cy="12" r="1" fill="currentColor"></circle>
+      </svg>
+      <span>Wallet</span>
+    </button>
+  </nav>
+
+  <button id="btnTop" class="fabTop" hidden type="button" aria-label="Kembali ke atas">↑</button>
+
+  <!-- Ledger as modal -->
+  <div id="screenLedger" class="modal" hidden role="dialog" aria-modal="true" aria-label="History">
+    <div class="modalCard">
+      <div class="row space">
+        <h2>History</h2>
+        <button id="btnCloseLedger" class="pill ghost">Close</button>
+      </div>
+      <div id="ledgerList" class="list"></div>
+    </div>
+  </div>
+
+  <!-- Busy overlay -->
+  <div id="busy" class="busy" hidden aria-live="polite" aria-label="Loading">
+    <div class="busyCard">
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="busyMsg" class="busyMsg">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" hidden role="status" aria-live="polite">
+    <div class="toastInner">
+      <div class="toastIcon" aria-hidden="true"></div>
+      <div id="toastMsg" class="toastMsg"></div>
+    </div>
+    <div class="toastBar"><div id="toastBarFill" class="toastBarFill"></div></div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
