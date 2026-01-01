@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MeowRun Admin</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:#0b1020;color:#e9ecff}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    .card{background:#111a33;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin:12px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,button{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:#0f1730;color:#e9ecff;padding:10px 12px}
+    button{cursor:pointer;font-weight:800}
+    button.primary{border:none;background:linear-gradient(135deg,#ff7bb8,#7ad7ff);color:#071022}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;vertical-align:top}
+    th{color:#a8b0d6;text-align:left}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);font-size:12px}
+    .muted{color:#a8b0d6}
+    h3{margin:6px 0 10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>MeowRun Admin</h2>
+
+    <div class="card">
+      <h3>📊 Analytics</h3>
+      <div id="dash" class="row"></div>
+      <div class="muted" style="margin-top:8px">* Revenue adalah anggaran (boleh adjust ikut eCPM sebenar).</div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <input id="email" placeholder="Admin email" />
+        <input id="pass" placeholder="Password" type="password" />
+        <button class="primary" id="btnLogin">Login</button>
+        <button id="btnLogout">Logout</button>
+      </div>
+      <div class="muted" id="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <button class="primary" id="btnRefresh">Refresh</button>
+        <input id="note" placeholder="Admin note (optional)" style="border-radius:14px;min-width:280px" />
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>User</th><th>Amount</th><th>Method</th><th>Destination</th><th>Status</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+const API="http://localhost:8080";
+let token=sessionStorage.getItem("admTok")||"";
+const statusEl=document.getElementById("status");
+function setStatus(t){ statusEl.textContent=t; }
+
+async function api(path, opts={}){
+  const headers = opts.headers || {};
+  if (token) headers.Authorization = "Bearer " + token;
+  if (opts.body && !headers["Content-Type"]) headers["Content-Type"]="application/json";
+  const res = await fetch(API+path, { ...opts, headers });
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.error || ("HTTP "+res.status));
+  return data;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));}
+
+async function loadAnalytics(){
+  try{
+    if (!token){
+      document.getElementById("dash").innerHTML = `<div class="pill">Login untuk lihat analytics</div>`;
+      return;
+    }
+    const d = await api("/admin/analytics");
+    const el = document.getElementById("dash");
+    el.innerHTML = `
+      <div class="pill">👥 Users: ${d.users.total}</div>
+      <div class="pill">🆕 New 24h: ${d.users.new24h}</div>
+      <div class="pill">🔥 DAU: ${d.users.dau24h}</div>
+      <div class="pill">🎮 Runs: ${d.gameplay.totalRuns}</div>
+      <div class="pill">⚡ Runs 24h: ${d.gameplay.runs24h}</div>
+      <div class="pill">📺 Ads 24h: ${d.ads.ads24h}</div>
+      <div class="pill">📺 Ads 7d: ${d.ads.ads7d}</div>
+      <div class="pill">💰 Est Ads RM: ${Number(d.ads.estRevenueRM).toFixed(2)}</div>
+      <div class="pill">🏧 Paid RM: ${Number(d.economy.withdrawnRM).toFixed(2)}</div>
+      <div class="pill">⏳ Pending RM: ${Number(d.economy.pendingRM).toFixed(2)}</div>
+      <div class="pill">📈 Profit Est RM: ${Number(d.economy.estProfitRM).toFixed(2)}</div>
+    `;
+  }catch(e){
+    document.getElementById("dash").innerHTML = `<div class="pill">Analytics error: ${esc(e.message)}</div>`;
+  }
+}
+
+document.getElementById("btnLogin").onclick = async ()=>{
+  try{
+    const email=document.getElementById("email").value.trim();
+    const password=document.getElementById("pass").value;
+    const r=await api("/admin/login",{method:"POST",body:JSON.stringify({email,password})});
+    token=r.token; sessionStorage.setItem("admTok",token);
+    setStatus("Login OK");
+    await refresh();
+  }catch(e){ setStatus("Login fail: "+e.message); }
+};
+
+document.getElementById("btnLogout").onclick = ()=>{
+  token=""; sessionStorage.removeItem("admTok");
+  document.getElementById("rows").innerHTML="";
+  setStatus("Logged out");
+  loadAnalytics();
+};
+
+document.getElementById("btnRefresh").onclick = refresh;
+
+async function refresh(){
+  try{
+    setStatus("Loading...");
+    await loadAnalytics();
+
+    const r=await api("/admin/withdraws");
+    const tb=document.getElementById("rows");
+    tb.innerHTML="";
+    for(const w of r.items){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${w.id}</td>
+        <td>${esc(w.email)}<div class="muted">uid:${w.userId}</div></td>
+        <td><b>RM${Number(w.amountRM).toFixed(2)}</b></td>
+        <td>${esc(String(w.method).toUpperCase())}</td>
+        <td>${esc(w.destination)}</td>
+        <td><span class="pill">${esc(w.status)}</span><div class="muted">${esc(w.adminNote||"")}</div></td>
+        <td>
+          <button data-paid="${w.id}" ${w.status!=="pending"?"disabled":""}>Paid</button>
+          <button data-rej="${w.id}" ${w.status!=="pending"?"disabled":""}>Reject</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    }
+    tb.querySelectorAll("button[data-paid]").forEach(b=>{
+      b.onclick=async ()=>{
+        const id=b.getAttribute("data-paid");
+        const adminNote=document.getElementById("note").value.trim();
+        await api(`/admin/withdraws/${id}/paid`,{method:"POST",body:JSON.stringify({adminNote})});
+        await refresh();
+      };
+    });
+    tb.querySelectorAll("button[data-rej]").forEach(b=>{
+      b.onclick=async ()=>{
+        const id=b.getAttribute("data-rej");
+        const adminNote=document.getElementById("note").value.trim();
+        await api(`/admin/withdraws/${id}/reject`,{method:"POST",body:JSON.stringify({adminNote})});
+        await refresh();
+      };
+    });
+    setStatus("Loaded: "+(r.items? r.items.length : 0));
+  }catch(e){ setStatus("Error: "+e.message); }
+}
+
+/* boot */
+loadAnalytics();
+</script>
+</body>
+</html>
